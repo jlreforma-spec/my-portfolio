@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://jlreforma-spec.github.io/ceel-portfolio-v2/sitemap.xml
