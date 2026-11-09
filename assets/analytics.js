@@ -50,24 +50,6 @@
     gtag('config', GA_ID, { anonymize_ip: true });
   }
 
-  // Show public visitor numbers in the footer (works from any page that has #visitStats)
-  function showStats() {
-    var box = document.getElementById('visitStats');
-    if (!box || !gcOn) return;
-    fetch('https://' + GC_CODE + '.goatcounter.com/counter/TOTAL.json')
-      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(function (d) {
-        var c = document.getElementById('visitCount'), u = document.getElementById('visitUnique');
-        if (c) c.textContent = d.count;
-        if (u) u.textContent = d.count_unique || d.count;
-        box.hidden = false;
-      })
-      .catch(function () { /* keep hidden if counter is unavailable */ });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showStats);
-  else showStats();
-
-  // Click tracking
   document.addEventListener('click', function (e) {
     var el = e.target.closest('a, button');
     if (!el) return;
