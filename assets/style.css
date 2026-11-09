@@ -42,3 +42,4 @@ h1{font-size:clamp(2.3rem,6vw,4rem)}h2{font-size:clamp(1.8rem,4vw,2.6rem)}h1 spa
 .detail-hero{max-width:860px;margin:auto;padding:70px 5vw;display:grid;gap:14px}.detail-hero img{border-radius:var(--r);box-shadow:var(--sh);width:100%}
 @media(max-width:860px){.hero,.about-grid,.contact-grid,.cv-panel{grid-template-columns:1fr}.hero{min-height:0}.menu-toggle{display:block;margin-left:auto}.nav{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--bg);padding:12px 5vw;border-bottom:1px solid var(--line)}.nav.open{display:flex}.site-header{gap:10px}.education-card{flex-direction:column;align-items:flex-start}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+.visit-stats{max-width:1200px;margin:20px auto 0;text-align:center;font-size:.9rem;color:var(--muted)}.visit-stats strong{color:var(--pri2)}

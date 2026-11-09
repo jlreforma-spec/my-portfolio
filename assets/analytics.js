@@ -1,63 +1,84 @@
-/* Analytics for the portfolio (Google Analytics 4).
- * 1. Create a free GA4 property at https://analytics.google.com
- * 2. Copy your Measurement ID (looks like G-ABC123XYZ9) and paste it below.
- * Until you do, nothing is loaded and no data is sent.
- * On project pages, include this file with: <script src="../../assets/analytics.js" defer></script>
+/* Analytics + public visitor counter
+ *
+ * 1) GoatCounter (free, no cookies) -> powers the visitor numbers shown in the footer.
+ *    Sign up at https://www.goatcounter.com, choose a site code (e.g. "jilian"), then set it below.
+ *    In GoatCounter: Settings -> tick "Allow adding visitor counts on your website" -> Save.
+ * 2) Google Analytics 4 (optional, private dashboard) -> paste your Measurement ID below.
+ * Placeholders do nothing, so the site never breaks.
  */
 (function () {
   'use strict';
 
-  var GA_ID = 'G-XXXXXXXXXX'; // <-- replace with your Measurement ID
+  var GC_CODE = 'jilian';      // <-- your GoatCounter site code
+  var GA_ID   = 'G-XXXXXXXXXX';   // <-- optional Google Analytics Measurement ID
 
-  var enabled = /^G-[A-Z0-9]{6,}$/.test(GA_ID) && GA_ID !== 'G-XXXXXXXXXX';
+  var gcOn = /^[a-z0-9-]{2,}$/i.test(GC_CODE) && GC_CODE !== 'YOUR-CODE';
+  var gaOn = /^G-[A-Z0-9]{6,}$/.test(GA_ID) && GA_ID !== 'G-XXXXXXXXXX';
   var dnt = navigator.doNotTrack === '1' || window.doNotTrack === '1';
   var isLocal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:';
+  var collect = !dnt && !isLocal;
 
   window.dataLayer = window.dataLayer || [];
   function gtag() { window.dataLayer.push(arguments); }
   window.gtag = window.gtag || gtag;
 
-  // Safe wrapper: does nothing if analytics is off, so the site never breaks.
+  function loadScript(src, attrs) {
+    var s = document.createElement('script');
+    s.async = true; s.src = src;
+    for (var k in attrs) s.setAttribute(k, attrs[k]);
+    document.head.appendChild(s);
+  }
+
+  // Custom events (CV clicks, project clicks, etc.)
   function track(name, params) {
-    if (!enabled || dnt || isLocal) return;
-    try { gtag('event', name, params || {}); } catch (e) { /* ignore */ }
+    if (!collect) return;
+    try { if (gaOn) gtag('event', name, params || {}); } catch (e) {}
+    try {
+      if (gcOn && window.goatcounter && window.goatcounter.count) {
+        window.goatcounter.count({ path: 'event/' + name, title: name, event: true });
+      }
+    } catch (e) {}
   }
   window.trackEvent = track;
 
-  if (!enabled || dnt || isLocal) return; // respects Do Not Track and skips local testing
+  if (collect && gcOn) {
+    loadScript('https://gc.zgo.at/count.js', { 'data-goatcounter': 'https://' + GC_CODE + '.goatcounter.com/count' });
+  }
+  if (collect && gaOn) {
+    loadScript('https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_ID));
+    gtag('js', new Date());
+    gtag('config', GA_ID, { anonymize_ip: true });
+  }
 
-  var s = document.createElement('script');
-  s.async = true;
-  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_ID);
-  document.head.appendChild(s);
+  // Show public visitor numbers in the footer (works from any page that has #visitStats)
+  function showStats() {
+    var box = document.getElementById('visitStats');
+    if (!box || !gcOn) return;
+    fetch('https://' + GC_CODE + '.goatcounter.com/counter/TOTAL.json')
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (d) {
+        var c = document.getElementById('visitCount'), u = document.getElementById('visitUnique');
+        if (c) c.textContent = d.count;
+        if (u) u.textContent = d.count_unique || d.count;
+        box.hidden = false;
+      })
+      .catch(function () { /* keep hidden if counter is unavailable */ });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showStats);
+  else showStats();
 
-  gtag('js', new Date());
-  gtag('config', GA_ID, { anonymize_ip: true });
-
-  // Event tracking via click delegation
+  // Click tracking
   document.addEventListener('click', function (e) {
     var el = e.target.closest('a, button');
     if (!el) return;
-
     var custom = el.getAttribute('data-analytics');
-    if (custom) {
-      track(custom, { link_url: el.getAttribute('href') || '', page_location: location.href });
-      return;
-    }
-
+    if (custom) { track(custom, { link_url: el.getAttribute('href') || '' }); return; }
     var href = el.getAttribute('href') || '';
-
-    // Project detail clicks
     var m = href.match(/projects\/([^\/]+)\/?/);
     if (m) { track('project_click', { project_name: m[1] }); return; }
-
-    // Outbound links (e.g. GitHub)
-    if (/^https?:\/\//i.test(href) && href.indexOf(location.hostname) === -1) {
-      track('outbound_click', { link_url: href });
-    }
+    if (/^https?:\/\//i.test(href) && href.indexOf(location.hostname) === -1) track('outbound_click', { link_url: href });
   });
 
-  // Contact form (the "Prepare email" action)
   document.addEventListener('submit', function (e) {
     if (e.target && e.target.id === 'contactForm') track('contact_form_submit');
   });
